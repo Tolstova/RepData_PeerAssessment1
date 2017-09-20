@@ -1,5 +1,5 @@
 ---
-title: "Reproducible_Research_Peer_Assessment_1"
+title: "Reproducible Research Peer Assessment 1"
 author: "Olga Tolstova"
 date: '20-09-2017'
 output: html_document
