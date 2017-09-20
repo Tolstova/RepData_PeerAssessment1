@@ -1,25 +1,109 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Reproducible_Research_Peer_Assessment_1"
+author: "Olga Tolstova"
+date: '20-09-2017'
+output: html_document
 ---
 
 
+
 ## Loading and preprocessing the data
+```{r setup, echo=TRUE}
+# load libraries
+library(dplyr)
+library(ggplot2)
+# load data
+output_dir = "C:/R/5C/data"
+if (!dir.exists(output_dir)){
+    dir.create(output_dir)
+} else {
+    print("Dir already exists!")
+}
+setwd("C:/R/5C/data")
+
+# load zipped data  
+if (!file.exists("./activity.csv")) {
+    # download the data
+    fileURL <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+    zipfile="./SamsumgS3registeredActivity.zip"
+    message("Downloading data")
+    download.file(fileURL, destfile=zipfile)
+    unzip(zipfile, exdir=".")
+}
+
+activity <- read.csv("activity.csv")
+```
+## Q.1 What is mean total number of steps taken per day?
+
+```{r total_steps_per_day}
+total_steps_per_day <- aggregate(x = activity$steps , by = list(activity$date), FUN = sum ,na.rm=TRUE)
+names(total_steps_per_day) <- c("date","steps")
+hist(total_steps_per_day$steps, col = "blue", xlab = "Steps per day", main = "Total number of steps taken per day")
+```
+
+### Mean value
+
+```{r Mean, echo=TRUE}
+mean_of_activity <- mean(total_steps_per_day$steps)
+mean_of_activity
+```
+
+### Median value
+
+```{r Median, echo=TRUE}
+median(total_steps_per_day$steps)
+```
 
 
+## Q.2 What is the average daily activity pattern?
+```{r daily_activity_pattern, echo=TRUE}
+mean_steps_by_interval <- aggregate(steps ~ interval, data = activity, FUN = mean)
+plot(mean_steps_by_interval, type = "l", ylab = "Average Steps Taken", xlab = "5-Minute Interval", xlim = c(0, 2500), col="darkblue")
+```
 
-## What is mean total number of steps taken per day?
+Row of interval with highest mean steps
+```{r maximum, echo=TRUE}
+max_interval = which.max(mean_steps_by_interval$steps)
+max_interval
+```
+
+## Q.3 Imputing missing values
+
+Total number of missing values in the dataset (i.e. the total number of rows with NAs)
+```{r sum_NA, echo=TRUE}
+sum(is.na(activity$steps))
+```
+To calculate the mean of each day is difficult or impossible, so the mean of the whole data can be used
+
+```{r activity_with_replaced_NA, echo=TRUE}
+
+setwd("C:/R/5C/data")
+activity_with_replaced_NA <- read.csv("activity.csv")
+total_steps_per_day2 <- aggregate(x = activity_with_replaced_NA$steps , by = list(activity$date), FUN = sum ,na.rm=TRUE)
+mean_of_activity2 <- mean(total_steps_per_day2$steps)
+activity_with_replaced_NA$steps[is.na(activity_with_replaced_NA$steps)] <- mean_of_activity2
+
+total_steps_per_day_new <- aggregate(steps ~ date, activity_with_replaced_NA, sum)$steps
+hist(total_steps_per_day_new, col = "blue", xlab = "Steps per day with replaced NA values", main = "Total number of steps taken per day")
+```
 
 
+## Q.3 Are there differences in activity patterns between weekdays and weekends?
 
-## What is the average daily activity pattern?
+```{r weekdays_vs_weekends, echo=TRUE}
 
+Sys.setlocale("LC_TIME", "C")
+activity_with_replaced_NA$date <- as.Date(as.character(activity_with_replaced_NA$date))
+activity_with_replaced_NA$weekday <- as.factor(ifelse(weekdays(activity_with_replaced_NA$date) %in% c("Saturday","Sunday"), "Weekend", "Weekday"))
 
+average_steps_per_5_minute_and_per_weekday  <- aggregate(x = activity_with_replaced_NA$steps , 
+                                                         by = list(activity_with_replaced_NA$interval,activity_with_replaced_NA$weekday), FUN = mean ,na.rm=TRUE)
+names(average_steps_per_5_minute_and_per_weekday) <- c("interval","weekday","steps")
 
-## Imputing missing values
+activity_per_weekday_type <- ggplot(average_steps_per_5_minute_and_per_weekday,aes(interval,steps)) +
+    ggtitle("Time Series Plot of Average Steps by 5 min after Imputation") +
+    facet_grid(. ~ weekday) +
+    geom_line(size = 1)
+activity_per_weekday_type
 
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+```
